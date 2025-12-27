@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Columns3, Grid, Plus, X, CalendarRange, Repeat } from "lucide-react";
-import { collection, query, onSnapshot, writeBatch, doc, setDoc } from "firebase/firestore";
+// CORRECCIÓN: Quitamos setDoc que no se usaba
+import { collection, query, onSnapshot, writeBatch, doc } from "firebase/firestore";
 import { db } from "./firebase";
 
 // --- IMÁGENES DE LOS USUARIOS ---
@@ -13,6 +14,7 @@ import leoimg from "./assets/leo.jpeg";
 import nemeimg from "./assets/nemesio.jpeg";
 import victorimg from "./assets/victor.jpg";
 
+// --- Interfaces ---
 interface Meeting {
   date: string; 
   time: string;
@@ -29,10 +31,10 @@ type DayType = {
   meetingInfo?: Meeting[];
 };
 
+// CORRECCIÓN: Quitamos onHover de la interfaz porque ya no se usa
 interface DayProps {
   classNames: string;
   day: DayType;
-  onHover: (day: string | null) => void;
 }
 
 // Lista de feriados
@@ -52,7 +54,6 @@ const userImages: Record<string, string> = {
   "Brian": zaneimg,
   "Leonardo": leoimg,
   "Lucas": lucasimg,
-  "Luca": zaneimg,
   "Victor": victorimg,
   "Nicolas": nicoimg,
   "Fernando": fernandoImg,
@@ -67,7 +68,7 @@ const reasons = [
   "Otro"
 ];
 
-// Helper de Colores 
+// --- Helper de Colores ---
 const getReasonColor = (reason: string) => {
   switch (reason) {
     case "Vacaciones": return "border-green-500";
@@ -78,7 +79,7 @@ const getReasonColor = (reason: string) => {
   }
 };
 
-//Helper para generar los días 
+// --- Helper para generar los días ---
 const generateDays = (month: number, year: number, currentMeetings: Record<string, Meeting[]>): DayType[] => {
   const days: DayType[] = [];
   const firstDay = new Date(year, month, 1).getDay();
@@ -110,13 +111,12 @@ const generateDays = (month: number, year: number, currentMeetings: Record<strin
   return days;
 };
 
-//Componente de Día
-const Day: React.FC<DayProps> = ({ classNames, day, onHover }) => {
+// --- Componente de Día ---
+// CORRECCIÓN: Quitamos onHover de los props y los eventos mouseenter/leave
+const Day: React.FC<DayProps> = ({ classNames, day }) => {
   return (
     <motion.div
       className={`relative flex flex-col items-center justify-between p-1 md:p-2 ${classNames} h-20 md:h-24 rounded-xl md:rounded-[20px]`}
-      onMouseEnter={() => onHover(day.day)}
-      onMouseLeave={() => onHover(null)}
     >
       <span className="text-sm md:text-lg font-semibold text-white">
         {!(day.day[0] === "+" || day.day[0] === "-") && day.day}
@@ -150,17 +150,18 @@ const Day: React.FC<DayProps> = ({ classNames, day, onHover }) => {
 };
 
 // --- Grilla ---
-const CalendarGrid: React.FC<{ onHover: (day: string | null) => void; days: DayType[]; }> = ({ onHover, days }) => (
+// CORRECCIÓN: Quitamos onHover aquí también
+const CalendarGrid: React.FC<{ days: DayType[]; }> = ({ days }) => (
   <div className="grid grid-cols-7 gap-1 md:gap-3">
     {days.map((day, index) => (
-      <Day key={`${day.day}-${index}`} classNames={day.classNames} day={day} onHover={onHover} />
+      <Day key={`${day.day}-${index}`} classNames={day.classNames} day={day} />
     ))}
   </div>
 );
 
 // --- Componente Principal ---
 const App: React.FC = () => {
-  const [hoveredDay, setHoveredDay] = useState<string | null>(null);
+  // CORRECCIÓN: Eliminamos estado hoveredDay que no se usaba
   const [moreView, setMoreView] = useState(false);
   const [showModal, setShowModal] = useState(false);
 
@@ -202,7 +203,7 @@ const App: React.FC = () => {
   }, []);
 
   const days = useMemo(() => generateDays(currentMonth, currentYear, meetings), [currentMonth, currentYear, meetings]);
-  const handleDayHover = (day: string | null) => setHoveredDay(day);
+  // CORRECCIÓN: Eliminamos handleDayHover
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -224,8 +225,6 @@ const App: React.FC = () => {
         const batch = writeBatch(db);
         let count = 0;
 
-        // ID Único 
-        // Esto asegura que si existe "2026-01-13_Fernando", se sobrescriba
         const getDocumentId = (date: string, name: string) => {
             return `${date}_${name}`; 
         };
@@ -252,7 +251,6 @@ const App: React.FC = () => {
                 const dateStr = `${y}-${m}-${d}`;
 
                 if (!feriados.includes(dateStr)) {
-                    // CAMBIO: Usamos un ID específico en el doc()
                     const docId = getDocumentId(dateStr, formData.name);
                     const newRef = doc(db, "meetings", docId);
                     
@@ -263,7 +261,6 @@ const App: React.FC = () => {
             }
 
         } else {
-            // Lógica por Rango (incluye fecha única si start == end)
             if (!formData.startDate || !formData.endDate) return;
 
             let currentDate = new Date(formData.startDate + "T12:00:00");
@@ -281,7 +278,6 @@ const App: React.FC = () => {
                 const dateStr = `${y}-${m}-${d}`;
 
                 if (!feriados.includes(dateStr)) {
-                    // llamada de id
                     const docId = getDocumentId(dateStr, formData.name);
                     const newRef = doc(db, "meetings", docId);
 
@@ -421,8 +417,6 @@ const App: React.FC = () => {
                             <option value="3">Miércoles</option>
                             <option value="4">Jueves</option>
                             <option value="5">Viernes</option>
-                            <option value="6">Sábado</option>
-                            <option value="0">Domingo</option>
                         </select>
                         <p className="text-xs text-zinc-500 mt-1">Se agendará como "Oficina" automáticamente.</p>
                     </div>
@@ -496,7 +490,8 @@ const App: React.FC = () => {
                 ))}
               </div>
 
-              <CalendarGrid onHover={handleDayHover} days={days} />
+              {/* CORRECCIÓN: Grid sin onHover */}
+              <CalendarGrid days={days} />
 
               {/* --- REFERENCIAS --- */}
               <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 mt-4 pt-4 border-t border-[#323232]">
@@ -525,7 +520,6 @@ const App: React.FC = () => {
             </motion.div>
           </motion.div>
 
-          {/* Panel Lateral */}
           {moreView && (
             <motion.div
               key="more-view" layout initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
