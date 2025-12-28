@@ -44,7 +44,7 @@ const users = [
 
 // --- MAPA DE IMÁGENES (Usando carpeta public) ---
 const userImages: Record<string, string> = {
-  "Brian": "/brian.jpg",
+  "Brian": "/zane.jpg",
   "Leonardo": "/leo.jpeg",
   "Lucas": "/lucas.jpeg",
   "Luca": "/zane.jpg",
