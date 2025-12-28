@@ -1,18 +1,12 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Columns3, Grid, Plus, X, CalendarRange, Repeat } from "lucide-react";
-// CORRECCIÓN: Quitamos setDoc que no se usaba
 import { collection, query, onSnapshot, writeBatch, doc } from "firebase/firestore";
 import { db } from "./firebase";
 
 // --- IMÁGENES DE LOS USUARIOS ---
-import fernandoImg from "./assets/fernando.jpg";
-import lucasimg from "./assets/lucas.jpeg";
-import zaneimg from "./assets/zane.jpg";
-import nicoimg from "./assets/nico.jpeg";
-import leoimg from "./assets/leo.jpeg";
-import nemeimg from "./assets/nemesio.jpeg";
-import victorimg from "./assets/victor.jpg";
+// (Asegúrate de tener estas imágenes en tu carpeta public o assets según como lo configuraste antes)
+// Como acordamos usar la carpeta public, las referencias son strings directos abajo.
 
 // --- Interfaces ---
 interface Meeting {
@@ -31,7 +25,6 @@ type DayType = {
   meetingInfo?: Meeting[];
 };
 
-// CORRECCIÓN: Quitamos onHover de la interfaz porque ya no se usa
 interface DayProps {
   classNames: string;
   day: DayType;
@@ -49,15 +42,16 @@ const users = [
   "Nicolas", "Fernando", "Nemesio", "Santiago", "Jose"
 ];
 
-// --- MAPA DE IMÁGENES ---
+// --- MAPA DE IMÁGENES (Usando carpeta public) ---
 const userImages: Record<string, string> = {
-  "Brian": zaneimg,
-  "Leonardo": leoimg,
-  "Lucas": lucasimg,
-  "Victor": victorimg,
-  "Nicolas": nicoimg,
-  "Fernando": fernandoImg,
-  "Nemesio": nemeimg,
+  "Brian": "/brian.jpg",
+  "Leonardo": "/leo.jpeg",
+  "Lucas": "/lucas.jpeg",
+  "Luca": "/zane.jpg",
+  "Victor": "/victor.jpg",
+  "Nicolas": "/nico.jpeg",
+  "Fernando": "/fernando.jpg",
+  "Nemesio": "/nemesio.jpeg",
 };
 
 const reasons = [
@@ -112,7 +106,6 @@ const generateDays = (month: number, year: number, currentMeetings: Record<strin
 };
 
 // --- Componente de Día ---
-// CORRECCIÓN: Quitamos onHover de los props y los eventos mouseenter/leave
 const Day: React.FC<DayProps> = ({ classNames, day }) => {
   return (
     <motion.div
@@ -150,7 +143,6 @@ const Day: React.FC<DayProps> = ({ classNames, day }) => {
 };
 
 // --- Grilla ---
-// CORRECCIÓN: Quitamos onHover aquí también
 const CalendarGrid: React.FC<{ days: DayType[]; }> = ({ days }) => (
   <div className="grid grid-cols-7 gap-1 md:gap-3">
     {days.map((day, index) => (
@@ -161,7 +153,6 @@ const CalendarGrid: React.FC<{ days: DayType[]; }> = ({ days }) => (
 
 // --- Componente Principal ---
 const App: React.FC = () => {
-  // CORRECCIÓN: Eliminamos estado hoveredDay que no se usaba
   const [moreView, setMoreView] = useState(false);
   const [showModal, setShowModal] = useState(false);
 
@@ -203,7 +194,6 @@ const App: React.FC = () => {
   }, []);
 
   const days = useMemo(() => generateDays(currentMonth, currentYear, meetings), [currentMonth, currentYear, meetings]);
-  // CORRECCIÓN: Eliminamos handleDayHover
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -212,9 +202,25 @@ const App: React.FC = () => {
     const meetingTitle = activeTab === "recurring" ? "Oficina" : formData.reason;
     const userImageUrl = userImages[formData.name];
 
+    // --- LÓGICA DE HORARIOS ---
+    let meetingTime = "";
+
+    if (meetingTitle === "Oficina") {
+        if (formData.name === "Fernando") {
+            meetingTime = "09:00 AM - 13:00 PM";
+        } else if (formData.name === "Luca") {
+            meetingTime = "14:00 PM - 18:00 PM";
+        } else {
+            meetingTime = "09:00 AM - 18:00 PM";
+        }
+    } else {
+        // Para vacaciones, examen, wellness u otros, no ponemos horario
+        meetingTime = ""; 
+    }
+
     const baseMeetingData = {
         title: meetingTitle,
-        time: "09:00 AM",
+        time: meetingTime, // Usamos la variable calculada
         location: "Oficina",
         participants: [formData.name],
         userInitial: formData.name.charAt(0).toUpperCase(),
@@ -470,6 +476,7 @@ const App: React.FC = () => {
                     ></div>
                   </motion.button>
 
+                  {/* Botón de Agregar */}
                   <motion.button
                     className="flex items-center justify-center border rounded-lg p-1 border-[#323232] bg-[#1e1e1e] text-zinc-400 hover:text-white hover:border-zinc-500 transition-colors"
                     style={{ height: '42px', width: '42px' }}
@@ -490,7 +497,6 @@ const App: React.FC = () => {
                 ))}
               </div>
 
-              {/* CORRECCIÓN: Grid sin onHover */}
               <CalendarGrid days={days} />
 
               {/* --- REFERENCIAS --- */}
@@ -547,7 +553,8 @@ const App: React.FC = () => {
                               <div key={idx} className="p-4 flex flex-col gap-2">
                                 <div className="flex justify-between text-zinc-400 text-sm">
                                   <span>{m.date}</span>
-                                  <span>{m.time}</span>
+                                  {/* Mostrar hora SOLO si tiene contenido */}
+                                  {m.time && <span>{m.time}</span>}
                                 </div>
                                 <div className="font-bold text-lg text-white">{m.participants.join(", ")}</div>
                                 <div className={`text-sm ${reasonColorClass}`}>{m.title}</div>
